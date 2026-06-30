@@ -1,5 +1,5 @@
 """Configuration centralisée — pydantic-settings (charge .env)."""
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -18,9 +18,7 @@ class Settings(BaseSettings):
     # Auth
     tailscale_enabled: bool = True
 
-    class Config:
-        env_file = ".env"
-        env_prefix = "DASH_"
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="DASH_")
 
 
 settings = Settings()
