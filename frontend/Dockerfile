@@ -1,17 +1,17 @@
 # ─── Build stage ───────────────────────────────────────────
-FROM oven/bun:1.1 AS build
+FROM docker.io/oven/bun:1.1 AS build
 WORKDIR /app
 
 # Install deps
-COPY frontend/package.json frontend/bun.lockb* ./
+COPY package.json bun.lockb* ./
 RUN bun install --frozen-lockfile
 
 # Copy source and build
-COPY frontend/ .
+COPY . .
 RUN bun run build
 
 # ─── Runtime stage ─────────────────────────────────────────
-FROM node:20-slim AS runtime
+FROM docker.io/node:20-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production

@@ -7,17 +7,23 @@ on:
     branches: [main, master]
 
 jobs:
+  # ─── Backend tests ────────────────────────────────────────
   backend-tests:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16-alpine
+        image: docker.io/postgres:16-alpine
         env:
           POSTGRES_USER: vv_admin
           POSTGRES_PASSWORD: vv_admin_secret
           POSTGRES_DB: ville_en_vogue
         ports:
           - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vv_admin"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,3 +43,47 @@ jobs:
         run: |
           cd backend
           pytest -v --tb=short
+
+  # ─── Frontend tests ───────────────────────────────────────
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install
+        run: |
+          cd frontend
+          bun install
+      - name: Build
+        run: |
+          cd frontend
+          bun run build
+      - name: Install Playwright
+        run: |
+          cd frontend
+          bun add -d @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Run tests
+        run: |
+          cd frontend
+          bun run test
+
+  # ─── Docker build smoke ───────────────────────────────────
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t hermes-dashboard-backend ./backend
+      - name: Build frontend image
+        run: docker build -t hermes-dashboard-frontend ./frontend
+      - name: Compose up smoke
+        run: |
+          docker compose up -d --wait
+          sleep 10
+          curl -sf http://localhost:8899/api/health | grep -q '"status"'
+          curl -sf http://localhost:3000 | grep -q '<html'
+          docker compose down

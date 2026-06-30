@@ -1,15 +1,56 @@
 services:
+  # ─── Backend FastAPI ──────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hermes-dashboard-backend
     ports:
       - "8899:8899"
     env_file: ./backend/.env
+    environment:
+      - DASH_PG_HOST=postgres
+      - DASH_PG_PORT=5432
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8899/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - hermes-net
 
+  # ─── Frontend Next.js ─────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hermes-dashboard-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8899
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - hermes-net
+
+  # ─── PostgreSQL 16 ────────────────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: docker.io/postgres:16-alpine
+    container_name: hermes-dashboard-postgres
     environment:
       POSTGRES_USER: vv_admin
       POSTGRES_PASSWORD: vv_admin_secret
@@ -19,14 +60,17 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vv_admin -d ville_en_vogue"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - hermes-net
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    restart: unless-stopped
+networks:
+  hermes-net:
+    driver: bridge
 
 volumes:
   pgdata:
