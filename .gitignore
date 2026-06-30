@@ -10,5 +10,12 @@ __pycache__/
 *.db-wal
 *.db-shm
 venv/
+.venv/
 .coverage
 htmlcov/
+
+# Build artefacts
+*.egg-info/
+test-results/
+playwright-report/
+bun.lockb.cache/
