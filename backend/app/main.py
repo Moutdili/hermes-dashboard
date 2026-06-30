@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from app.db.connection import get_pool, close_pool
-from app.routers import knowledge, system
+from app.routers import knowledge, system, auth
 
 
 @asynccontextmanager
@@ -37,6 +37,7 @@ app.add_middleware(
 # Routers
 app.include_router(knowledge.router)
 app.include_router(system.router)
+app.include_router(auth.router)
 
 
 # Static frontend (dev — Next.js s'occupe du prod)
