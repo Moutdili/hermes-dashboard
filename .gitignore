@@ -1,0 +1,14 @@
+node_modules/
+.next/
+dist/
+.env
+.env.local
+*.pyc
+__pycache__/
+.pytest_cache/
+*.db
+*.db-wal
+*.db-shm
+venv/
+.coverage
+htmlcov/
