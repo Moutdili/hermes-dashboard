@@ -3,26 +3,73 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  BookOpen,
-  MessageSquare,
-  Wrench,
-  Clock,
-  History,
-  Settings,
-  Network,
+  LayoutDashboard, BookOpen, MessageSquare, Wrench, Clock,
+  History, Settings, Network, Terminal, FileText, Brain,
+  ScrollText, Stethoscope, UserCircle, Ghost, Bot, Trello,
+  Share2, FileCode2, Workflow, Home, Pickaxe, Bell,
+  Spade, Music, Radio,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
-  { href: '/chat', label: 'Chat', icon: MessageSquare },
-  { href: '/skills', label: 'Skills', icon: Wrench },
-  { href: '/cron', label: 'Cron', icon: Clock },
-  { href: '/sessions', label: 'Sessions', icon: History },
-  { href: '/graph', label: 'Graph', icon: Network },
-  { href: '/settings', label: 'Settings', icon: Settings },
+const navSections = [
+  {
+    label: 'Main',
+    items: [
+      { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { href: '/knowledge', label: 'Knowledge', icon: BookOpen },
+      { href: '/chat', label: 'Chat', icon: MessageSquare },
+      { href: '/graph', label: 'Graph', icon: Network },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { href: '/skills', label: 'Skills', icon: Wrench },
+      { href: '/cron', label: 'Cron', icon: Clock },
+      { href: '/sessions', label: 'Sessions', icon: History },
+      { href: '/terminal', label: 'Terminal', icon: Terminal },
+      { href: '/files', label: 'Files', icon: FileText },
+      { href: '/memory', label: 'Memory', icon: Brain },
+      { href: '/logs', label: 'Logs', icon: ScrollText },
+      { href: '/doctor', label: 'Doctor', icon: Stethoscope },
+    ],
+  },
+  {
+    label: 'Agents',
+    items: [
+      { href: '/agents', label: 'Agents', icon: Bot },
+      { href: '/kanban', label: 'Kanban', icon: Trello },
+      { href: '/nodes', label: 'Nodes', icon: Share2 },
+      { href: '/holygraph', label: 'Holygraph', icon: Network },
+    ],
+  },
+  {
+    label: 'Config',
+    items: [
+      { href: '/profiles', label: 'Profiles', icon: UserCircle },
+      { href: '/souls', label: 'Souls', icon: Ghost },
+      { href: '/settings', label: 'Settings', icon: Settings },
+      { href: '/notifications', label: 'Notifs', icon: Bell },
+    ],
+  },
+  {
+    label: 'Tools',
+    items: [
+      { href: '/hub', label: 'Hub', icon: Home },
+      { href: '/blueprints', label: 'Blueprints', icon: FileCode2 },
+      { href: '/workflow', label: 'Workflow', icon: Workflow },
+      { href: '/leadminer', label: 'Leadminer', icon: Pickaxe },
+    ],
+  },
+  {
+    label: 'Fun',
+    items: [
+      { href: '/poker', label: 'Poker', icon: Spade },
+      { href: '/strudel', label: 'Strudel', icon: Music },
+      { href: '/media', label: 'Media', icon: Music },
+      { href: '/pretext', label: 'Pretext', icon: Radio },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -35,12 +82,8 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-bg-root/60 backdrop-blur-sm md:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 z-40 bg-bg-root/60 backdrop-blur-sm md:hidden" onClick={onClose} />
       )}
 
       <aside
@@ -52,7 +95,7 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
         )}
       >
         {/* Logo */}
-        <div className="h-navbar flex items-center px-4 border-b border-bd">
+        <div className="h-navbar flex items-center px-4 border-b border-bd shrink-0">
           <Link href="/" className="flex items-center gap-2" onClick={onClose}>
             <div className="w-8 h-8 rounded-lg bg-ac-cyan/20 flex items-center justify-center">
               <span className="text-ac-cyan font-bold text-sm">H</span>
@@ -61,36 +104,40 @@ export function Sidebar({ mobileOpen, onClose }: SidebarProps) {
           </Link>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const active = pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-base',
-                  active
-                    ? 'bg-ac-cyan/10 text-ac-cyan font-medium'
-                    : 'text-tx-secondary hover:text-tx-primary hover:bg-bd-subtle'
-                )}
-              >
-                <Icon size={18} />
-                {item.label}
-              </Link>
-            );
-          })}
+        {/* Nav — scrollable */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
+          {navSections.map((section) => (
+            <div key={section.label} className="mb-3">
+              <div className="px-3 py-1 text-xs font-semibold text-tx-muted uppercase tracking-wider">{section.label}</div>
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onClose}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-1.5 rounded-md text-sm transition-base',
+                      active
+                        ? 'bg-ac-cyan/10 text-ac-cyan font-medium'
+                        : 'text-tx-secondary hover:text-tx-primary hover:bg-bd-subtle'
+                    )}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Footer */}
-        <div className="p-3 border-t border-bd">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-tx-muted">
+        <div className="p-3 border-t border-bd shrink-0">
+          <div className="flex items-center gap-2 px-3 py-1 rounded-md text-xs text-tx-muted">
             <div className="w-2 h-2 rounded-full bg-status-success animate-pulse" />
-            <span>v0.4.0 · Phase 4</span>
+            <span>v1.0.0 · Phase 6</span>
           </div>
         </div>
       </aside>
