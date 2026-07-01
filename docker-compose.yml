@@ -7,6 +7,9 @@ services:
     container_name: hermes-dashboard-backend
     ports:
       - "8898:8899"
+    volumes:
+      - ~/.hermes/skills:/root/.hermes/skills:ro
+      - ~/.hermes/cron/output:/root/.hermes/cron/output:ro
     env_file:
       - ./backend/.env.docker
     depends_on:

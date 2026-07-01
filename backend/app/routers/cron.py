@@ -28,23 +28,50 @@ def _cron_to_frontend(c: dict) -> dict:
 
 @router.get("")
 async def list_crons():
-    """Liste tous les cron jobs → CronJob[] direct."""
-    import subprocess
-    try:
-        result = subprocess.run(
-            [sys.executable, HERMES_CRON_DUMP],
-            capture_output=True, text=True, timeout=15,
-            cwd=HERMES_HOME,
-        )
-        crons = []
-        if result.returncode == 0:
-            try:
-                crons = json.loads(result.stdout)
-            except Exception:
-                pass
-        return [_cron_to_frontend(c) for c in crons]
-    except Exception:
-        return []
+    """Liste tous les cron jobs → CronJob[] direct (filesystem, compatible Docker)."""
+    crons = []
+    # Try filesystem first (works in Docker with volume mount)
+    out_dir = Path(CRON_OUTPUT_DIR)
+    if out_dir.exists():
+        for job_dir in sorted(out_dir.iterdir()):
+            if job_dir.is_dir():
+                files = sorted(job_dir.glob("*.md"), reverse=True)
+                last_output = ""
+                last_run = None
+                if files:
+                    last_run = datetime.fromtimestamp(files[0].stat().st_mtime).isoformat()
+                    try:
+                        last_output = files[0].read_text()[:200]
+                    except Exception:
+                        pass
+                crons.append({
+                    "id": job_dir.name,
+                    "name": job_dir.name,
+                    "schedule": "",
+                    "prompt": "",
+                    "status": "unknown",
+                    "last_run": last_run,
+                    "next_run": None,
+                })
+
+    # Fallback: try dump script
+    if not crons:
+        import subprocess
+        try:
+            result = subprocess.run(
+                [sys.executable, HERMES_CRON_DUMP],
+                capture_output=True, text=True, timeout=15,
+            )
+            if result.returncode == 0:
+                try:
+                    raw = json.loads(result.stdout)
+                    crons = [_cron_to_frontend(c) for c in raw]
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+    return crons
 
 
 @router.get("/{job_id}/output")

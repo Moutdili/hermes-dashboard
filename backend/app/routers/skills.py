@@ -49,30 +49,34 @@ def _parse_skill_md(path: str) -> dict:
 
 @router.get("")
 async def list_skills():
-    """Liste tous les skills → Skill[] direct."""
-    import subprocess
-    try:
-        r = subprocess.run(
-            ["hermes", "skills", "list"],
-            capture_output=True, text=True, timeout=10,
-            cwd=os.path.expanduser("~/.hermes"),
-        )
-        skills = []
-        for line in r.stdout.split("\n"):
-            line = line.strip()
-            if not line or "─" in line or "Name" in line or "Installed" in line:
-                continue
-            parts = line.split("│")
-            if len(parts) >= 3:
-                skills.append({
-                    "name": parts[1].strip(),
-                    "description": "",
-                    "category": parts[2].strip(),
-                    "tags": [],
-                })
-        return skills
-    except Exception:
-        return []
+    """Liste tous les skills → Skill[] direct (filesystem, compatible Docker)."""
+    skills = []
+    for skill_md in sorted(glob.glob(os.path.join(SKILLS_DIR, "*", "*", "SKILL.md"))):
+        parsed = _parse_skill_md(skill_md)
+        skills.append(parsed)
+    if not skills:
+        # Fallback: try hermes CLI
+        import subprocess
+        try:
+            r = subprocess.run(
+                ["hermes", "skills", "list"],
+                capture_output=True, text=True, timeout=10,
+            )
+            for line in r.stdout.split("\n"):
+                line = line.strip()
+                if not line or "─" in line or "Name" in line or "Installed" in line:
+                    continue
+                parts = line.split("│")
+                if len(parts) >= 3:
+                    skills.append({
+                        "name": parts[1].strip(),
+                        "description": "",
+                        "category": parts[2].strip(),
+                        "tags": [],
+                    })
+        except Exception:
+            pass
+    return skills
 
 
 @router.get("/grouped")
