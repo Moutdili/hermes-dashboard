@@ -1,4 +1,4 @@
-"""Router Cron — liste et output des cron jobs."""
+"""Router Cron — liste et output des cron jobs. Contrat aligné frontend."""
 import os
 import sys
 import json
@@ -13,9 +13,22 @@ CRON_OUTPUT_DIR = os.path.join(HERMES_HOME, "cron", "output")
 HERMES_CRON_DUMP = os.path.join(HERMES_HOME, "scripts", "dump-crons-json.py")
 
 
+def _cron_to_frontend(c: dict) -> dict:
+    """Backend cron dump → frontend CronJob."""
+    return {
+        "id": c.get("job_id", c.get("id", "")),
+        "name": c.get("name", c.get("prompt", "")[:60]),
+        "schedule": c.get("schedule", ""),
+        "prompt": c.get("prompt", ""),
+        "status": c.get("status", "unknown"),
+        "last_run": c.get("last_run"),
+        "next_run": c.get("next_run"),
+    }
+
+
 @router.get("")
 async def list_crons():
-    """Liste tous les cron jobs avec leur dernier statut et output résumé."""
+    """Liste tous les cron jobs → CronJob[] direct."""
     import subprocess
     try:
         result = subprocess.run(
@@ -29,46 +42,26 @@ async def list_crons():
                 crons = json.loads(result.stdout)
             except Exception:
                 pass
-
-        enriched = []
-        for c in crons:
-            jid = c.get("job_id", c.get("id", ""))
-            c["output_preview"] = ""
-            c["output_file"] = ""
-            if jid:
-                out_dir = Path(CRON_OUTPUT_DIR) / jid
-                if out_dir.exists():
-                    files = sorted(out_dir.glob("*.md"), reverse=True)
-                    if files:
-                        latest = files[0]
-                        c["output_file"] = str(latest)
-                        try:
-                            c["output_preview"] = latest.read_text()[:500]
-                        except Exception:
-                            pass
-            enriched.append(c)
-
-        return {"crons": enriched, "total": len(enriched)}
-    except Exception as e:
-        return {"error": str(e), "crons": []}
+        return [_cron_to_frontend(c) for c in crons]
+    except Exception:
+        return []
 
 
 @router.get("/{job_id}/output")
 async def get_cron_output(job_id: str):
-    """Retourne le dernier output d'un cron spécifique."""
+    """Dernier output d'un cron → CronOutput."""
     out_dir = Path(CRON_OUTPUT_DIR) / job_id
     if not out_dir.exists():
-        return {"job_id": job_id, "output": "", "error": "No output directory"}
+        return {"id": job_id, "output": "", "timestamp": ""}
     files = sorted(out_dir.glob("*.md"), reverse=True)
     if not files:
-        return {"job_id": job_id, "output": "", "error": "No output files"}
+        return {"id": job_id, "output": "", "timestamp": ""}
     try:
         content = files[0].read_text()
         return {
-            "job_id": job_id,
+            "id": job_id,
             "output": content,
-            "file": str(files[0]),
             "timestamp": datetime.fromtimestamp(files[0].stat().st_mtime).isoformat(),
         }
-    except Exception as e:
-        return {"job_id": job_id, "output": "", "error": str(e)}
+    except Exception:
+        return {"id": job_id, "output": "", "timestamp": ""}

@@ -1,4 +1,4 @@
-"""Tests Phase 3 — Skills, Cron, Sessions, Chat."""
+"""Tests Phase 3 — Skills, Cron, Sessions, Chat. Contrat frontend aligné."""
 import pytest
 import json
 from httpx import AsyncClient, ASGITransport
@@ -21,20 +21,21 @@ class TestSkills:
     async def test_list_skills(self, client):
         r = await client.get("/api/skills")
         assert r.status_code == 200
-        assert "skills" in r.json()
+        data = r.json()
+        assert isinstance(data, list)
 
     async def test_skills_grouped(self, client):
         r = await client.get("/api/skills/grouped")
         assert r.status_code == 200
         data = r.json()
-        assert "groups" in data
-        assert "total_categories" in data
-        assert "total_skills" in data
-        assert data["total_skills"] > 0
+        assert isinstance(data, list)
+        for g in data:
+            assert "category" in g
+            assert "skills" in g
 
     async def test_get_skill_content(self, client):
         r = await client.get("/api/skills/grouped")
-        groups = r.json().get("groups", [])
+        groups = r.json()
         if not groups:
             pytest.skip("No skills installed")
         skill_name = groups[0]["skills"][0]["name"]
@@ -46,14 +47,13 @@ class TestSkills:
 
     async def test_nonexistent_skill(self, client):
         r = await client.get("/api/skills/nonexistent-skill-xyz")
-        assert r.status_code == 200
-        assert "error" in r.json()
+        assert r.status_code == 404
 
     async def test_skills_grouped_have_descriptions(self, client):
         """Au moins quelques skills doivent avoir une description."""
         r = await client.get("/api/skills/grouped")
-        groups = r.json()["groups"]
-        all_skills = [s for g in groups for s in g["skills"]]
+        groups = r.json()
+        all_skills = [s for g in groups for s in g.get("skills", [])]
         with_desc = [s for s in all_skills if s.get("description")]
         assert len(with_desc) > 0
 
@@ -65,14 +65,14 @@ class TestCron:
         r = await client.get("/api/crons")
         assert r.status_code == 200
         data = r.json()
-        assert "crons" in data
-        assert "total" in data
+        assert isinstance(data, list)
 
     async def test_cron_output_nonexistent(self, client):
         r = await client.get("/api/crons/nonexistent-job/output")
         assert r.status_code == 200
         data = r.json()
-        assert "error" in data or data.get("output") == ""
+        assert "id" in data
+        assert data["output"] == ""
 
 
 # ═══ Sessions ═══
@@ -83,16 +83,13 @@ class TestSessions:
         r = await client.get("/api/sessions", headers={"X-Forwarded-For": "100.76.54.29"})
         assert r.status_code == 200
         data = r.json()
-        assert "hermes_sessions" in data
-        assert "dashboard_sessions" in data
-        assert "total" in data
+        assert isinstance(data, list)
 
     async def test_session_messages_nonexistent(self, client):
         r = await client.get("/api/sessions/nonexistent-session/messages")
         assert r.status_code == 200
         data = r.json()
-        # Soit messages vide, soit erreur
-        assert "messages" in data or "error" in data
+        assert isinstance(data, list)
 
 
 # ═══ Chat WebSocket ═══
@@ -135,16 +132,13 @@ class TestOpenAPIComplete:
         schema = r.json()
         paths = schema["paths"]
 
-        # Knowledge
         assert "/api/knowledge/search" in paths
-        # Auth
         assert "/api/auth/whoami" in paths
-        # Skills
+        assert "/api/auth/login" in paths
+        assert "/api/auth/logout" in paths
         assert "/api/skills" in paths
         assert "/api/skills/grouped" in paths
-        # Cron
         assert "/api/crons" in paths
-        # Sessions
         assert "/api/sessions" in paths
-        # System
         assert "/api/health" in paths
+        assert "/api/status" in paths

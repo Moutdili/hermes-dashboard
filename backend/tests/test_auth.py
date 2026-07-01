@@ -17,36 +17,35 @@ async def client():
 
 class TestWhoami:
     async def test_whoami_tailscale_ip(self, client):
-        """Une IP Tailscale (100.76.54.29) doit résoudre un utilisateur."""
+        """Une IP Tailscale doit résoudre un utilisateur (User direct, contrat frontend)."""
         r = await client.get("/api/auth/whoami", headers={"X-Forwarded-For": "100.76.54.29"})
         assert r.status_code == 200
         data = r.json()
-        assert "user" in data
-        assert "channel" in data
+        assert "id" in data
+        assert "name" in data
+        assert "ip" in data
         assert "channels" in data
-        assert data["user"]["id"] == "100.76.54.29"
+        assert data["id"] == "100.76.54.29"
 
     async def test_whoami_localhost_defaults_to_fhp(self, client):
         """Localhost doit être résolu comme l'IP par défaut configurée."""
         r = await client.get("/api/auth/whoami")
         assert r.status_code == 200
-        assert r.json()["user"]["id"] == "127.0.0.1"
+        assert r.json()["id"] == "127.0.0.1"
 
     async def test_whoami_creates_guest_for_unknown_ip(self, client):
         """Une IP inconnue doit créer un utilisateur Guest."""
         r = await client.get("/api/auth/whoami", headers={"X-Forwarded-For": "100.99.99.99"})
         assert r.status_code == 200
         data = r.json()
-        assert data["user"]["id"] == "100.99.99.99"
-        assert "Guest" in data["user"]["name"]
+        assert data["id"] == "100.99.99.99"
+        assert "Guest" in data["name"]
 
-    async def test_whoami_returns_channel(self, client):
-        """whoami doit retourner un canal (private par défaut)."""
+    async def test_whoami_returns_channels(self, client):
+        """whoami doit retourner des channels."""
         r = await client.get("/api/auth/whoami", headers={"X-Forwarded-For": "100.76.54.29"})
-        channel = r.json()["channel"]
-        assert channel is not None
-        assert "id" in channel
-        assert "name" in channel
+        channels = r.json()["channels"]
+        assert isinstance(channels, list)
 
 
 class TestUsers:
@@ -59,17 +58,18 @@ class TestUsers:
         assert len(users) > 0
 
     async def test_user_has_fields(self, client):
-        """Chaque utilisateur doit avoir les champs attendus."""
+        """Chaque utilisateur doit avoir les champs attendus (contrat frontend)."""
         r = await client.get("/api/auth/users")
         for u in r.json()[:5]:
             assert "id" in u
             assert "name" in u
-            assert "device_type" in u
+            assert "ip" in u
+            assert "channels" in u
 
 
 class TestChannels:
     async def test_list_channels_for_user(self, client):
-        """L'utilisateur fhp doit avoir au moins un canal (private + shared)."""
+        """L'utilisateur fhp doit avoir au moins un canal."""
         r = await client.get("/api/auth/channels", headers={"X-Forwarded-For": "100.76.54.29"})
         assert r.status_code == 200
         channels = r.json()
@@ -102,7 +102,6 @@ class TestSessions:
         """Crée une session puis liste les sessions du canal."""
         from app.services.user_service import users
 
-        # Créer une session
         session = await users.create_session(
             channel_id="shared",
             user_id="100.76.54.29",
@@ -111,12 +110,10 @@ class TestSessions:
         assert session is not None
         assert session["title"] == "Test Session"
 
-        # Lister
         sessions = await users.get_sessions_for_channel("shared")
         assert len(sessions) > 0
         assert any(s["title"] == "Test Session" for s in sessions)
 
-        # Nettoyer
         await users.delete_session(session["id"])
 
 
@@ -130,7 +127,7 @@ class TestStats:
         assert "channels" in data
         assert "sessions" in data
         assert "messages" in data
-        assert data["channels"] > 0  # au moins shared
+        assert data["channels"] > 0
 
     async def test_stats_all_ints(self, client):
         """Tous les compteurs doivent être des int."""
@@ -165,7 +162,7 @@ class TestIPResolution:
         assert ip == "100.55.66.77"
 
     async def test_get_client_ip_localhost_defaults(self, client):
-        """Localhost doit être résolu comme fhp."""
+        """Localhost doit être résolu comme l'IP par défaut."""
         from app.middleware.auth import get_client_ip
         from unittest.mock import MagicMock
 

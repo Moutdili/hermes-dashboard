@@ -1,55 +1,99 @@
-"""Router Auth — whoami, users, channels, sessions."""
+"""Router Auth — whoami, login, logout, users, channels. Contrat aligné frontend."""
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.middleware.auth import get_user_context
+from pydantic import BaseModel
+from app.middleware.auth import get_user_context, get_client_ip
 from app.services.user_service import users
-from app.models.user import UserContextResponse, User, Channel, Session, StatsResponse
+from app.models.user import User, Channel, Session
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
-@router.get("/whoami", response_model=UserContextResponse)
-async def whoami(ctx: dict = Depends(get_user_context)):
-    """Retourne l'utilisateur résolu + canal actif + canaux disponibles."""
+class LoginRequest(BaseModel):
+    ip: str
+
+
+def _user_to_frontend(row: dict) -> dict:
+    """Backend user → frontend User {id, name, ip, channels}."""
     return {
-        "user": ctx["user"],
-        "channel": ctx["channel"],
-        "channels": ctx["channels"],
+        "id": row.get("id", ""),
+        "name": row.get("name", ""),
+        "ip": row.get("id", ""),  # Tailscale IP = user ID
+        "channels": [],
     }
 
 
-@router.get("/users", response_model=list[User])
+@router.get("/whoami")
+async def whoami(ctx: dict = Depends(get_user_context)):
+    """Retourne l'utilisateur → User direct (frontend contract)."""
+    user = _user_to_frontend(ctx["user"])
+    user["channels"] = [
+        {"id": c["id"], "name": c["name"], "type": c.get("type", "private")}
+        for c in ctx.get("channels", [])
+    ]
+    return user
+
+
+@router.post("/login")
+async def login(req: LoginRequest):
+    """Login par IP → {success, user}."""
+    resolved = await users.resolve_user(req.ip)
+    if not resolved:
+        # Auto-create guest
+        resolved = await users.resolve_user(req.ip)
+    if not resolved:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Could not resolve user")
+    return {
+        "success": True,
+        "user": _user_to_frontend(resolved),
+    }
+
+
+@router.post("/logout")
+async def logout(ctx: dict = Depends(get_user_context)):
+    """Logout → {success}."""
+    return {"success": True}
+
+
+@router.get("/users")
 async def list_users():
-    """Liste tous les utilisateurs connus."""
-    return await users.list_users()
+    """Liste tous les utilisateurs."""
+    all_users = await users.list_users()
+    return [_user_to_frontend(u) for u in all_users]
 
 
-@router.get("/channels", response_model=list[Channel])
+@router.get("/channels")
 async def list_channels(ctx: dict = Depends(get_user_context)):
-    """Liste les canaux accessibles à l'utilisateur courant."""
-    return ctx["channels"]
+    """Canaux de l'utilisateur courant."""
+    return [
+        {"id": c["id"], "name": c["name"], "type": c.get("type", "private")}
+        for c in ctx.get("channels", [])
+    ]
 
 
-@router.post("/channels", response_model=Channel)
+@router.post("/channels")
 async def create_channel(
     name: str,
     channel_type: str = "shared",
     ctx: dict = Depends(get_user_context),
 ):
     """Crée un nouveau canal."""
-    return await users.create_channel(
+    ch = await users.create_channel(
         name=name,
         channel_type=channel_type,
         owner_id=ctx["user"]["id"],
     )
+    if not ch:
+        raise HTTPException(status_code=500, detail="Failed to create channel")
+    return {"id": ch["id"], "name": ch["name"], "type": ch.get("type", channel_type)}
 
 
-@router.get("/sessions/{channel_id}", response_model=list[Session])
+@router.get("/sessions/{channel_id}")
 async def list_sessions(channel_id: str, limit: int = 20):
-    """Liste les sessions d'un canal."""
+    """Sessions d'un canal."""
     return await users.get_sessions_for_channel(channel_id, limit=limit)
 
 
-@router.get("/stats", response_model=StatsResponse)
+@router.get("/stats")
 async def stats():
-    """Statistiques globales du dashboard."""
+    """Statistiques globales."""
     return await users.stats()

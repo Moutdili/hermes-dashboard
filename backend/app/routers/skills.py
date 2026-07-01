@@ -1,7 +1,7 @@
-"""Router Skills — liste, détail, sauvegarde."""
+"""Router Skills — liste, détail, sauvegarde. Contrat aligné frontend."""
 import os
 import glob
-from pathlib import Path
+import yaml
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from app.config import settings
@@ -17,18 +17,39 @@ class SkillSaveRequest(BaseModel):
 
 def _find_skill_dir(name: str) -> str | None:
     """Cherche récursivement le dossier d'un skill par son nom."""
-    matches = glob.glob(os.path.join(SKILLS_DIR, "**", name, "SKILL.md"), recursive=True)
-    if matches:
-        return os.path.dirname(matches[0])
-    matches = glob.glob(os.path.join(SKILLS_DIR, "**", name, "skill.md"), recursive=True)
-    if matches:
-        return os.path.dirname(matches[0])
+    for ext in ("SKILL.md", "skill.md"):
+        matches = glob.glob(os.path.join(SKILLS_DIR, "**", name, ext), recursive=True)
+        if matches:
+            return os.path.dirname(matches[0])
     return None
+
+
+def _parse_skill_md(path: str) -> dict:
+    """Parse SKILL.md YAML frontmatter + markdown body."""
+    desc = ""
+    category = "other"
+    tags: list[str] = []
+    name = os.path.basename(os.path.dirname(path))
+    try:
+        content = open(path).read()
+        if content.startswith("---"):
+            parts = content.split("---", 2)
+            if len(parts) >= 3:
+                try:
+                    fm = yaml.safe_load(parts[1]) or {}
+                    desc = fm.get("description", "")
+                    category = fm.get("category", "other")
+                    tags = fm.get("tags", [])
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return {"name": name, "description": desc, "category": category, "tags": tags}
 
 
 @router.get("")
 async def list_skills():
-    """Liste tous les skills installés."""
+    """Liste tous les skills → Skill[] direct."""
     import subprocess
     try:
         r = subprocess.run(
@@ -45,59 +66,35 @@ async def list_skills():
             if len(parts) >= 3:
                 skills.append({
                     "name": parts[1].strip(),
-                    "source": parts[2].strip(),
+                    "description": "",
+                    "category": parts[2].strip(),
+                    "tags": [],
                 })
-        return {"skills": skills}
+        return skills
     except Exception:
-        return {"skills": []}
+        return []
 
 
 @router.get("/grouped")
 async def list_skills_grouped():
-    """Retourne les skills groupés par catégorie."""
+    """Retourne les skills groupés → SkillGroup[] direct."""
     groups: dict[str, list] = {}
-    for skill_dir in sorted(glob.glob(os.path.join(SKILLS_DIR, "*", "*", "SKILL.md"))):
-        rel = os.path.relpath(os.path.dirname(skill_dir), SKILLS_DIR)
-        parts = rel.split(os.sep)
-        if len(parts) >= 2:
-            category, name = parts[0], parts[1]
-        else:
-            category, name = "other", rel
+    for skill_md in sorted(glob.glob(os.path.join(SKILLS_DIR, "*", "*", "SKILL.md"))):
+        parsed = _parse_skill_md(skill_md)
+        cat = parsed["category"]
+        if cat not in groups:
+            groups[cat] = []
+        groups[cat].append(parsed)
 
-        if category not in groups:
-            groups[category] = []
-
-        desc = ""
-        try:
-            content = open(skill_dir).read()
-            for line in content.split("\n"):
-                line = line.strip()
-                if line.startswith("description:"):
-                    desc = line.split(":", 1)[1].strip().strip('"').strip("'")
-                    break
-        except Exception:
-            pass
-
-        groups[category].append({
-            "name": name,
-            "description": desc,
-            "path": os.path.dirname(skill_dir),
-        })
-
-    result = [
-        {"category": k, "count": len(v), "skills": sorted(v, key=lambda x: x["name"])}
+    return [
+        {"category": k, "skills": sorted(v, key=lambda x: x["name"])}
         for k, v in sorted(groups.items())
     ]
-    return {
-        "groups": result,
-        "total_categories": len(result),
-        "total_skills": sum(len(g["skills"]) for g in result),
-    }
 
 
 @router.get("/{skill_name}")
 async def get_skill_content(skill_name: str):
-    """Retourne le contenu d'un skill (SKILL.md)."""
+    """Retourne le contenu d'un skill → SkillDetail direct."""
     skill_dir = _find_skill_dir(skill_name)
     if skill_dir:
         skill_file = os.path.join(skill_dir, "SKILL.md")
@@ -105,13 +102,14 @@ async def get_skill_content(skill_name: str):
             skill_file = os.path.join(skill_dir, "skill.md")
         if os.path.exists(skill_file):
             content = open(skill_file).read()
-            return {"name": skill_name, "content": content, "path": skill_file}
-    return {"name": skill_name, "content": "", "error": "Skill not found"}
+            parsed = _parse_skill_md(skill_file)
+            return {**parsed, "content": content}
+    raise HTTPException(status_code=404, detail="Skill not found")
 
 
 @router.post("/{skill_name}/save")
 async def save_skill(skill_name: str, req: SkillSaveRequest):
-    """Sauvegarde le contenu d'un skill."""
+    """Sauvegarde le contenu d'un skill → {success: true}."""
     skill_dir = _find_skill_dir(skill_name)
     if skill_dir:
         skill_file = os.path.join(skill_dir, "SKILL.md")
@@ -121,4 +119,4 @@ async def save_skill(skill_name: str, req: SkillSaveRequest):
     os.makedirs(skill_dir, exist_ok=True)
     with open(skill_file, "w") as f:
         f.write(req.content)
-    return {"status": "saved", "name": skill_name, "path": skill_file}
+    return {"success": True}
