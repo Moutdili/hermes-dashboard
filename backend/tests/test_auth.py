@@ -27,10 +27,10 @@ class TestWhoami:
         assert data["user"]["id"] == "100.76.54.29"
 
     async def test_whoami_localhost_defaults_to_fhp(self, client):
-        """Localhost doit être résolu comme fhp (DEFAULT_IP)."""
+        """Localhost doit être résolu comme l'IP par défaut configurée."""
         r = await client.get("/api/auth/whoami")
         assert r.status_code == 200
-        assert r.json()["user"]["id"] == "100.76.54.29"
+        assert r.json()["user"]["id"] == "127.0.0.1"
 
     async def test_whoami_creates_guest_for_unknown_ip(self, client):
         """Une IP inconnue doit créer un utilisateur Guest."""
@@ -175,7 +175,7 @@ class TestIPResolution:
         request.client.host = "127.0.0.1"
 
         ip = get_client_ip(request)
-        assert ip == "100.76.54.29"
+        assert ip == "127.0.0.1"
 
     async def test_is_tailscale_ip(self, client):
         """is_tailscale_ip doit reconnaître les IPs Tailscale."""

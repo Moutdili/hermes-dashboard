@@ -21,7 +21,7 @@ class TestHealth:
         assert r.status_code == 200
         data = r.json()
         assert data["status"] in ("ok", "degraded")
-        assert "db" in data
+        assert "database" in data
 
 
 class TestSearch:

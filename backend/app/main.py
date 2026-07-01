@@ -7,6 +7,7 @@ from pathlib import Path
 
 from app.db.connection import get_pool, close_pool
 from app.routers import knowledge, system, auth, skills, cron, sessions, chat
+from app.config import settings
 
 
 @asynccontextmanager
@@ -26,10 +27,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — localhost + Tailscale
+# CORS — configure in .env (default: localhost:3000)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: restrict to Tailscale IPs in prod
+    allow_origins=settings.cors_origins.split(","),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -54,7 +55,7 @@ _obs_router = _AR()
 @_obs_router.get("/obsidian", response_class=_HR)
 @_obs_router.get("/knowledge-graph", response_class=_HR)
 async def _obsidian_graph():
-    """Graphe 3D Three.js — 448 notes + 66 liens, façon Obsidian."""
+    """Graphe 3D Three.js — notes + liens, façon Obsidian."""
     return _HR(content=_OBSIDIAN_HTML)
 
 
@@ -226,7 +227,7 @@ _OBSIDIAN_HTML = r"""<!DOCTYPE html>
 <div id="loading"><div class="spin"></div><p>Chargement du vault…</p></div>
 <div id="hud" style="display:none">
   <h1>📚 Knowledge Vault</h1>
-  <p>Hermes Obsidian Graph — 448 notes interconnectées</p>
+  <p>Hermes Obsidian Graph — notes interconnectées</p>
   <div class="stats">
     <div class="stat"><b id="stat-nodes">0</b> notes</div>
     <div class="stat"><b id="stat-edges">0</b> liens</div>

@@ -3,10 +3,11 @@ import ipaddress
 from fastapi import Request, HTTPException, status
 from app.services.user_service import users
 
+from app.config import settings
+
 # Tailscale CGNAT range
 TAILSCALE_NET = ipaddress.ip_network("100.64.0.0/10")
 LOCALHOST_IPS = {"127.0.0.1", "::1", "localhost"}
-DEFAULT_IP = "100.76.54.29"  # fhp
 
 
 def get_client_ip(request: Request) -> str:
@@ -23,10 +24,10 @@ def get_client_ip(request: Request) -> str:
     if client:
         ip = client.host
         if ip in LOCALHOST_IPS or ip.startswith("127."):
-            return DEFAULT_IP
+            return settings.default_ip
         return ip
 
-    return DEFAULT_IP
+    return settings.default_ip
 
 
 def is_tailscale_ip(ip: str) -> bool:
