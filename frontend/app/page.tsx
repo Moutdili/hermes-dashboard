@@ -28,20 +28,20 @@ export default function HomePage() {
   }, []);
 
   if (loading) return <LoadingState label="Connexion au backend…" />;
-  if (error) return <ErrorState message={`Backend injoignable: ${error}`} />;
+  if (error) return <ErrorState message={`Backend injoignable: ${error}`} onRetry={() => window.location.reload()} />;
 
   const stats = [
     { label: 'Skills', value: status?.skills_count ?? '—', icon: Wrench, href: '/skills', color: 'purple' as const },
     { label: 'Cron Jobs', value: status?.cron_count ?? '—', icon: Clock, href: '/cron', color: 'amber' as const },
     { label: 'Sessions', value: status?.active_sessions ?? '—', icon: History, href: '/sessions', color: 'cyan' as const },
-    { label: 'Knowledge', value: '448', icon: BookOpen, href: '/knowledge', color: 'green' as const },
+    { label: 'Knowledge', value: '—', icon: BookOpen, href: '/knowledge', color: 'green' as const },
   ];
 
   const quickLinks = [
-    { href: '/knowledge', label: 'Knowledge Vault', icon: BookOpen, desc: 'Rechercher dans 448 notes' },
-    { href: '/chat', label: 'Chat Agent', icon: MessageSquare, desc: 'Discuter avec Hermes en temps réel' },
-    { href: '/graph', label: 'Knowledge Graph', icon: Network, desc: 'Visualiser les connexions' },
-    { href: '/skills', label: 'Skills Browser', icon: Wrench, desc: '347 compétences installées' },
+    { href: '/knowledge', label: 'Knowledge Vault', icon: BookOpen, desc: 'Recherche full-text PostgreSQL', color: 'purple' as const },
+    { href: '/chat', label: 'Chat Agent', icon: MessageSquare, desc: 'Discuter avec Hermes en temps réel', color: 'cyan' as const },
+    { href: '/graph', label: 'Knowledge Graph', icon: Network, desc: 'Visualiser les connexions', color: 'green' as const },
+    { href: '/skills', label: 'Skills Browser', icon: Wrench, desc: `${status?.skills_count ?? '—'} compétences installées`, color: 'amber' as const },
   ];
 
   return (
@@ -134,7 +134,7 @@ export default function HomePage() {
               <Link key={q.href} href={q.href}>
                 <Card hoverable className="flex items-start gap-4">
                   <div className="p-3 rounded-lg bg-bg-elevated">
-                    <Icon className="text-ac-cyan" size={20} />
+                    <Icon className={`text-ac-${q.color}`} size={20} />
                   </div>
                   <div>
                     <h3 className="text-sm font-medium text-tx-primary">{q.label}</h3>

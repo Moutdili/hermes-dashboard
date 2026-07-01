@@ -10,16 +10,16 @@
     "test": "playwright test"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "d3": "^7.9.0",
+    "lucide-react": "^0.428.0",
     "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.2",
-    "lucide-react": "^0.428.0",
-    "d3": "^7.9.0",
     "react-markdown": "^9.0.1",
+    "react-syntax-highlighter": "^15.5.0",
     "remark-gfm": "^4.0.0",
-    "react-syntax-highlighter": "^15.5.0"
+    "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
@@ -29,6 +29,7 @@
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
     "bun-types": "latest",
+    "impeccable": "^3.1.0",
     "postcss": "^8.4.40",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.5.4"

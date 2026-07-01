@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/State';
 import { formatDate } from '@/lib/utils';
 
-const notifications = [
-  { id: 1, type: 'success', title: 'Deploy réussi', desc: 'Phase 5 — Docker images buildées', time: new Date(Date.now() - 300000).toISOString(), read: false },
-  { id: 2, type: 'warning', title: 'Memory pleine', desc: 'MEMORY.md à 99% (15877/16000)', time: new Date(Date.now() - 3600000).toISOString(), read: false },
-  { id: 3, type: 'info', title: 'Nouveau skill', desc: 'Skill "hermes-agent" mis à jour', time: new Date(Date.now() - 7200000).toISOString(), read: true },
-];
+const notifications: Array<{ id: number; type: string; title: string; desc: string; time: string; read: boolean }> = [];
 
 const typeColors: Record<string, 'green' | 'amber' | 'cyan'> = {
   success: 'green', warning: 'amber', info: 'cyan',

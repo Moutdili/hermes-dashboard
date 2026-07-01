@@ -4,21 +4,9 @@ import { Ghost, Sparkles, Plus } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/State';
 
-const souls = [
-  { name: 'discord', desc: 'Persona Discord — helpful, concise, French', active: true },
-  { name: 'soul', desc: 'Soul-MD — anti-nataliste, mélancolie informée', active: false },
-  { name: 'catgirl', desc: 'Neko-chan — anime catgirl, nya~', active: false },
-  { name: 'kawaii', desc: 'Kawaii — cute, sparkles, adorable', active: false },
-  { name: 'noir', desc: 'Detective noir — rain, regrets, silicon', active: false },
-  { name: 'pirate', desc: 'Captain Hermes — nautical, yo ho ho', active: false },
-  { name: 'shakespeare', desc: 'Bardic prose, soliloquies', active: false },
-  { name: 'philosopher', desc: 'Contemplates deeper meaning', active: false },
-  { name: 'concise', desc: 'Brief, to the point', active: false },
-  { name: 'creative', desc: 'Out of the box, innovative', active: false },
-  { name: 'hype', desc: 'SO PUMPED! LET\'S GOOO!', active: false },
-  { name: 'helpful', desc: 'Friendly, helpful default', active: false },
-];
+const souls: Array<{ name: string; desc: string; active: boolean }> = [];
 
 export default function SoulsPage() {
   return (
@@ -30,6 +18,9 @@ export default function SoulsPage() {
         <Button size="sm"><Plus size={14} /> New persona</Button>
       </div>
 
+      {souls.length === 0 ? (
+        <EmptyState icon={<Ghost size={32} />} title="Aucune persona" description="Les personas seront listées ici" />
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {souls.map((s) => (
           <Card key={s.name} hoverable>
@@ -44,6 +35,7 @@ export default function SoulsPage() {
           </Card>
         ))}
       </div>
+      )}
     </div>
   );
 }

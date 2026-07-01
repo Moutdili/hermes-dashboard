@@ -91,6 +91,21 @@ html, body {
   animation: fadeIn 250ms ease forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-pulse-glow,
+  .animate-spin,
+  .animate-pulse {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .animate-fade-in {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Markdown content */
 .prose-dark {
   color: #e8edf5;

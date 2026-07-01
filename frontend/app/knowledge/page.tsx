@@ -46,7 +46,7 @@ export default function KnowledgePage() {
           <BookOpen className="text-ac-cyan" />
           Knowledge Vault
         </h1>
-        <p className="text-sm text-tx-secondary mt-1">448 notes indexées · recherche full-text PostgreSQL</p>
+        <p className="text-sm text-tx-secondary mt-1">Recherche full-text PostgreSQL</p>
       </div>
 
       <SearchBar onSearch={handleSearch} placeholder="Rechercher dans le vault…" />

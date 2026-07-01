@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils';
+import { Button } from './Button';
+import { RefreshCw } from 'lucide-react';
 
 export function Spinner({ className }: { className?: string }) {
   return (
@@ -39,11 +41,16 @@ export function EmptyState({
   );
 }
 
-export function ErrorState({ message }: { message: string }) {
+export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
       <div className="text-2xl mb-2">⚠️</div>
-      <p className="text-sm text-ac-rose">{message}</p>
+      <p className="text-sm text-ac-rose mb-4">{message}</p>
+      {onRetry && (
+        <Button variant="outline" size="sm" onClick={onRetry}>
+          <RefreshCw size={14} className="mr-1" /> Réessayer
+        </Button>
+      )}
     </div>
   );
 }

@@ -22,8 +22,8 @@ export default function ProfilesPage() {
   useEffect(() => {
     fetch('/api/profiles')
       .then((r) => r.json())
-      .then((d) => setProfiles(d.profiles || [{ name: 'default', active: true, sessions: 42, skills: 347 }]))
-      .catch(() => setProfiles([{ name: 'default', active: true, sessions: 42, skills: 347 }]))
+      .then((d) => setProfiles(d.profiles || []))
+      .catch(() => setProfiles([]))
       .finally(() => setLoading(false));
   }, []);
 

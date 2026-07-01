@@ -6,11 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/State';
 
-const blueprints = [
-  { name: 'FastAPI + PostgreSQL', desc: 'Backend avec asyncpg, Pydantic v2, tests pytest', tags: ['backend', 'python'] },
-  { name: 'Next.js + Tailwind', desc: 'Frontend SSR, dark theme, design system', tags: ['frontend', 'typescript'] },
-  { name: 'Docker Compose stack', desc: 'Multi-service avec healthchecks et réseau', tags: ['devops'] },
-];
+const blueprints: Array<{ name: string; desc: string; tags: string[] }> = [];
 
 export default function BlueprintsPage() {
   return (
@@ -21,6 +17,9 @@ export default function BlueprintsPage() {
         </h1>
         <Button size="sm"><Plus size={14} /> New blueprint</Button>
       </div>
+      {blueprints.length === 0 ? (
+        <EmptyState icon={<FileCode2 size={32} />} title="Aucun blueprint" description="Les blueprints seront listés ici" />
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {blueprints.map((b) => (
           <Card key={b.name} hoverable>
@@ -36,6 +35,7 @@ export default function BlueprintsPage() {
           </Card>
         ))}
       </div>
+      )}
     </div>
   );
 }

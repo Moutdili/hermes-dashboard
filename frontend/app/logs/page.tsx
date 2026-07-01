@@ -16,12 +16,7 @@ interface LogEntry {
   message: string;
 }
 
-const mockLogs: LogEntry[] = [
-  { timestamp: new Date().toISOString(), level: 'INFO', source: 'gateway', message: 'Gateway started — Discord connected' },
-  { timestamp: new Date(Date.now() - 60000).toISOString(), level: 'INFO', source: 'cron', message: 'Cron scheduler tick — 0 jobs ran' },
-  { timestamp: new Date(Date.now() - 120000).toISOString(), level: 'WARN', source: 'memory', message: 'MEMORY.md at 99% capacity (15877/16000 chars)' },
-  { timestamp: new Date(Date.now() - 180000).toISOString(), level: 'INFO', source: 'skill', message: 'Skill "hermes-agent" loaded' },
-];
+
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -33,8 +28,8 @@ export default function LogsPage() {
   useEffect(() => {
     fetch('/api/logs')
       .then((r) => r.json())
-      .then((d) => { setLogs(d.entries || mockLogs); setFiltered(d.entries || mockLogs); })
-      .catch(() => { setLogs(mockLogs); setFiltered(mockLogs); })
+      .then((d) => { setLogs(d.entries || []); setFiltered(d.entries || []); })
+      .catch(() => { setLogs([]); setFiltered([]); })
       .finally(() => setLoading(false));
   }, []);
 
