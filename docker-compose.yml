@@ -6,17 +6,15 @@ services:
       dockerfile: Dockerfile
     container_name: hermes-dashboard-backend
     ports:
-      - "8899:8899"
-    env_file: ./backend/.env
-    environment:
-      - DASH_PG_HOST=postgres
-      - DASH_PG_PORT=5432
+      - "8898:8899"
+    env_file:
+      - ./backend/.env.docker
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8899/api/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8899/api/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -31,7 +29,7 @@ services:
       dockerfile: Dockerfile
     container_name: hermes-dashboard-frontend
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - BACKEND_URL=http://backend:8899
     depends_on:
@@ -51,17 +49,15 @@ services:
   postgres:
     image: docker.io/postgres:16-alpine
     container_name: hermes-dashboard-postgres
-    environment:
-      POSTGRES_USER: vv_admin
-      POSTGRES_PASSWORD: vv_admin_secret
-      POSTGRES_DB: ville_en_vogue
+    env_file:
+      - ./backend/.env.docker
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vv_admin -d ville_en_vogue"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vv_admin} -d ${POSTGRES_DB:-ville_en_vogue}"]
       interval: 10s
       timeout: 5s
       retries: 5
